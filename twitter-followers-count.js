@@ -1,10 +1,7 @@
 // 作者： @eson000
 // Scriptable twitter follow count
 
-const userName = "eson000",
-
-// 到 https://developer.twitter.com/en/portal/dashboard 获取token
-bearerToken = "xxxxx";
+const userName = args[0] || "eson000";
 
 let widget
 
@@ -35,7 +32,7 @@ Script.complete();
 async function createLogWidget(logObj) {
   let widget = new ListWidget();
 
-  let descriptionElement = widget.addText(JSON.stringify(logObj));·
+  let descriptionElement = widget.addText(JSON.stringify(logObj));
 	descriptionElement.minimumScaleFactor = 0.5;
   descriptionElement.textColor = Color.red();
   descriptionElement.font = Font.systemFont(18);
@@ -89,11 +86,8 @@ async function createWidget(info, avatar) {
 }
 
 async function load() {
-  let url = `https://api.twitter.com/2/users/by/username/${userName}?user.fields=public_metrics,profile_image_url`;
+  let url = `https://api.esonwong.com/widget/twitter/profile/${userName}`;
   let req = new Request(url);
-	req.headers = {
-		Authorization: `Bearer ${bearerToken}`,
-	};
   return await req.loadJSON();
 }
 
