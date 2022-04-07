@@ -86,7 +86,7 @@ async function createWidget(info, avatar) {
 }
 
 async function load() {
-  let url = `https://api.esonwong.com/widget/twitter/profile/${userName}`;
+  let url = `https://eson-api.esonwong.workers.dev/twitter/profile/${userName}`;
   let req = new Request(url);
   return await req.loadJSON();
 }
