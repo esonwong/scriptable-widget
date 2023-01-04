@@ -3,17 +3,16 @@
 
 const userName = args[0] || "eson000";
 
-let widget
+let widget;
 
 try {
-  let result = await load();
-  let info = result.data;
-  let avatar = await loadAvatar(info.profile_image_url.replace("_normal", "_bigger"));
-
-  widget = await createWidget(info, avatar)
-  // widget = await createLogWidget(info);
+  let result = await getData();
+  console.log(result);
+  const { history, avatarUrl } = result;
+  let avatar = await loadAvatar(avatarUrl.replace("_normal", "_bigger"));
+  widget = await createWidget(history, avatar, config.widgetFamily);
 } catch (e) {
-  console.error(e)
+  console.error(e);
   widget = await createLogWidget(e.message);
 }
 
@@ -33,30 +32,56 @@ async function createLogWidget(logObj) {
   let widget = new ListWidget();
 
   let descriptionElement = widget.addText(JSON.stringify(logObj));
-	descriptionElement.minimumScaleFactor = 0.5;
+  descriptionElement.minimumScaleFactor = 0.5;
   descriptionElement.textColor = Color.red();
   descriptionElement.font = Font.systemFont(18);
 
   return widget;
 }
+/**
+ * Create widget
+ * @param {Array} history
+ * @param {Image} avatar
+ * @param {string} widgetFamily small, medium, large extraLarge and null.
+ **/
+async function createWidget(history, avatar, widgetFamily) {
+  switch (widgetFamily) {
+    case "small":
+      return await createSmallWidget(history, avatar);
+    case "medium":
+      return await createMediumWidget(history, avatar);
+    case "large":
+      return await createLargeWidget(history, avatar);
+    default:
+      return await createDefaultWidget(history, avatar);
+  }
+}
 
-async function createWidget(info, avatar) {
+async function createDefaultWidget(history, avatar) {
   let widget = new ListWidget();
 
   widget.backgroundColor = Color.white();
+  const followersCountStack = renderFollowersText(widget, history);
+  followersCountStack.addSpacer(4);
 
+  return widget;
+}
 
+async function createSmallWidget(history, avatar) {
+  let widget = new ListWidget();
+
+  widget.backgroundColor = Color.white();
 
   // Show avatar
   let avatarStack = widget.addStack();
   let avatarElement = avatarStack.addImage(avatar);
   avatarElement.imageSize = new Size(64, 64);
   avatarElement.cornerRadius = 4;
-	avatarStack.centerAlignContent();
+  avatarStack.centerAlignContent();
 
   widget.addSpacer(4);
 
-	// Show user name
+  // Show user name
   let userNameStack = widget.addText(userName);
   userNameStack.textColor = Color.black();
   userNameStack.textOpacity = 0.8;
@@ -64,29 +89,47 @@ async function createWidget(info, avatar) {
 
   widget.addSpacer(12);
 
-	// Show followers count
-	let followersCountStack = widget.addStack();
-  let descriptionElement = followersCountStack.addText(`${info.public_metrics.followers_count}`);
-  descriptionElement.minimumScaleFactor = 0.5;
-  descriptionElement.textColor = Color.black();
-  descriptionElement.font = Font.systemFont(18);
-	followersCountStack.addSpacer(4);
-	let followersText = followersCountStack.addText("Followers");
-	followersText.minimumScaleFactor = 0.5;
-	followersText.textColor = Color.black();
-	followersText.textOpacity = 0.5;
+  // Show followers count
+  const followersCountStack = renderFollowersText(widget, history);
+  followersCountStack.addSpacer(4);
 
   // UI presented in Siri ans Shortcuta is non-interactive, so we only show the footer when not running the script from Siri.
   if (!config.runsWithSiri) {
-
     widget.addSpacer(8);
-
   }
   return widget;
 }
 
-async function load() {
-  let url = `https://eson-api.esonwong.workers.dev/twitter/profile/${userName}`;
+async function createMediumWidget(history, avatar) {
+  return createDefaultWidget(history, avatar);
+}
+
+async function createLargeWidget(history, avatar) {
+  return createMediumWidget(history, avatar);
+}
+
+function renderFollowersText(widget, history) {
+  let followersCountStack = widget.addStack();
+  let text = `${history[history.length - 1].followersCount} Foers` || "0 Foer";
+  let textElement = followersCountStack.addText(text);
+  textElement.textColor = Color.black();
+  textElement.font = Font.systemFont(18);
+  textElement.textOpacity = 1;
+
+  if (history.length > 1) {
+    let increase =
+      history[history.length - 1].followersCount -
+      history[history.length - 2].followersCount;
+    let increaseText = followersCountStack.addText(
+      increase > 0 ? `+${increase}` : `${increase}`
+    );
+    increaseText.textColor = increase > 0 ? Color.green() : Color.red();
+  }
+  return followersCountStack;
+}
+
+async function getData() {
+  let url = `https://eson-api.esonwong.workers.dev/twitter/profile/${userName}/v2`;
   let req = new Request(url);
   return await req.loadJSON();
 }
