@@ -1,7 +1,7 @@
 // 作者： @eson000
 // Scriptable twitter follow count
 
-const userName = args[0] || "eson000";
+const userName = args.widgetParameter || "eson000";
 
 let widget;
 
