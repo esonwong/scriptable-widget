@@ -110,26 +110,37 @@ async function createLargeWidget(history, avatar) {
 
 function renderFollowersText(widget, history) {
   let followersCountStack = widget.addStack();
-  let text = `${history[history.length - 1].followersCount} Foers` || "0 Foer";
+  let text = `${history[history.length - 1].followersCount} 👤` || "0 👤";
   let textElement = followersCountStack.addText(text);
   textElement.textColor = Color.black();
   textElement.font = Font.systemFont(18);
-  textElement.textOpacity = 1;
 
   if (history.length > 1) {
     let increase =
       history[history.length - 1].followersCount -
       history[history.length - 2].followersCount;
-    let increaseText = followersCountStack.addText(
-      increase > 0 ? `+${increase}` : `${increase}`
-    );
-    increaseText.textColor = increase > 0 ? Color.green() : Color.red();
+    switch (true) {
+      case increase > 0:
+        followersCountStack.addSpacer(4);
+        let increaseText = followersCountStack.addText(`+${increase}`);
+        increaseText.textColor = Color.green();
+        increaseText.font = Font.systemFont(18);
+        break;
+      case increase < 0:
+        followersCountStack.addSpacer(4);
+        let decreaseText = followersCountStack.addText(`${increase}`);
+        decreaseText.textColor = Color.red();
+        decreaseText.font = Font.systemFont(18);
+        break;
+      default:
+        break;
+    }
   }
   return followersCountStack;
 }
 
 async function getData() {
-  let url = `https://eson-api.esonwong.workers.dev/twitter/profile/${userName}/v2`;
+  let url = `https://worker-api.esonwong.com/twitter/profile/${userName}/v2`;
   let req = new Request(url);
   return await req.loadJSON();
 }
