@@ -74,17 +74,17 @@ async function createSmallWidget(history, avatar) {
 
   // Show avatar
   let avatarStack = widget.addStack();
-  let avatarElement = avatarStack.addImage(avatar);
-  avatarElement.imageSize = new Size(64, 64);
-  avatarElement.cornerRadius = 4;
   avatarStack.centerAlignContent();
+
+  let avatarElement = avatarStack.addImage(avatar);
+  // avatarElement.imageSize = new Size(64, 64);
+  // avatarElement.cornerRadius = 4;
 
   widget.addSpacer(4);
 
   // Show user name
   let userNameStack = widget.addText(userName);
   userNameStack.textColor = Color.black();
-  userNameStack.textOpacity = 0.8;
   userNameStack.font = Font.mediumSystemFont(13);
 
   widget.addSpacer(12);
@@ -110,7 +110,14 @@ async function createLargeWidget(history, avatar) {
 
 function renderFollowersText(widget, history) {
   let followersCountStack = widget.addStack();
-  let text = `${history[history.length - 1].followersCount} 👤` || "0 👤";
+  followersCountStack.centerAlignContent();
+
+  const symbol = SFSymbol.named("person.3.sequence.fill");
+  symbol.applyFont(Font.systemFont(24));
+  const iconElement = followersCountStack.addImage(symbol.image);
+  iconElement.imageSize = new Size(24, 24);
+
+  let text = `${history[history.length - 1].followersCount}` || "0";
   let textElement = followersCountStack.addText(text);
   textElement.textColor = Color.black();
   textElement.font = Font.systemFont(18);
