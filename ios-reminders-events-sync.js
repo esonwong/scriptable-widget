@@ -73,7 +73,7 @@ function updateEvent(event, reminder) {
   const r = event.notes?.match?.(noteReg);
 
   // 从日历更新开始时间到提醒事项
-  if ((r && r[3]) !== event.startDate.getTime()) {
+  if (r && r[3] && r[3] !== event.startDate.getTime()) {
     reminder.dueDate = event.startDate;
     reminder.save();
   }
