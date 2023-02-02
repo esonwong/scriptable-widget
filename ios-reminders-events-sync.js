@@ -1,5 +1,8 @@
 var dur_month = 1;
 
+// [Reminder] id timestamp
+const noteReg = /(\[Reminder\])\s([A-Z0-9\-]*)\s(\d*)/;
+
 const startDate = new Date();
 startDate.setMonth(startDate.getMonth() - dur_month);
 console.log(`日历的开始时间 ${startDate.toLocaleDateString()}`);
@@ -24,15 +27,13 @@ const events = await CalendarEvent.between(startDate, endDate, calendar);
 console.log(`获取 ${events.length} 条日历`);
 
 var reminders_id_set = new Set(reminders.map((e) => e.identifier));
+
 //删除日历里提醒事项删除的事项
 events_created = events.filter(
   (e) => e.notes != null && e.notes.includes("[Reminder]")
 );
 for (let event of events_created) {
-  //console.warn(event.notes)
-  let reg = /(\[Reminder\])\s([A-Z0-9\-]*)/;
-  let r = event.notes.match(reg);
-  //if(r) console.log(r[2])
+  let r = event.notes.match(noteReg);
   if (!reminders_id_set.has(r[2])) {
     event.remove();
   }
@@ -40,21 +41,28 @@ for (let event of events_created) {
 
 for (const reminder of reminders) {
   //reminder的标识符
-  const targetNote = `[Reminder] ${reminder.identifier}`;
-  const [targetEvent] = events.filter(
-    (e) => e.notes != null && e.notes.includes(targetNote)
-  ); //过滤重复的reminder
+  const targetNotePrefix = `[Reminder] ${reminder.identifier}`;
+
+  const targetEvent = events.find(
+    (e) => e.notes != null && e.notes.includes(targetNotePrefix)
+  );
+
   if (!m_dict[reminder.calendar.title]) {
     console.warn("找不到日历" + reminder.calendar.title);
     continue;
   }
+
   if (targetEvent) {
-    //console.log(`找到已经创建的事项 ${reminder.title}`)
     updateEvent(targetEvent, reminder);
   } else {
-    console.warn(`创建事项 ${reminder.title} 到 ${reminder.calendar.title}`);
+    console.log(`创建日历事项 ${reminder.title} 到 ${reminder.calendar.title}`);
     const newEvent = new CalendarEvent();
-    newEvent.notes = targetNote + "\n" + (reminder.notes || "无备注"); //要加入备注
+    newEvent.notes =
+      targetNotePrefix +
+      " " +
+      reminder.dueDate.getTime() +
+      "\n" +
+      (reminder.notes || "无备注"); //要加入备注
     updateEvent(newEvent, reminder);
   }
 }
@@ -62,6 +70,14 @@ for (const reminder of reminders) {
 Script.complete();
 
 function updateEvent(event, reminder) {
+  const r = event.notes?.match?.(noteReg);
+
+  // 从日历更新开始时间到提醒事项
+  if ((r && r[3]) !== event.startDate.getTime()) {
+    reminder.dueDate = event.startDate;
+    reminder.save();
+  }
+
   event.title = `${reminder.title}`;
   cal_name = reminder.calendar.title;
   cal = m_dict[cal_name];
