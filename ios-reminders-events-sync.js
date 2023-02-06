@@ -1,7 +1,9 @@
 var dur_month = 1;
 
-// [Reminder] id timestamp
-const noteReg = /(\[Reminder\])\s([A-Z0-9\-]*)\s(\d*)/;
+// [Reminder] id
+const rmemberIdReg = /(\[Reminder\])\s([A-Z0-9\-]*)/;
+// [DueDate] dueDate
+const reminderDueDateReg = /(\[DueDate\])\s(\d*)/;
 
 const startDate = new Date();
 startDate.setMonth(startDate.getMonth() - dur_month);
@@ -33,7 +35,7 @@ events_created = events.filter(
   (e) => e.notes != null && e.notes.includes("[Reminder]")
 );
 for (let event of events_created) {
-  let r = event.notes.match(noteReg);
+  let r = event.notes.match(rmemberIdReg);
   if (!reminders_id_set.has(r[2])) {
     event.remove();
   }
@@ -41,10 +43,10 @@ for (let event of events_created) {
 
 for (const reminder of reminders) {
   //reminder的标识符
-  const targetNotePrefix = `[Reminder] ${reminder.identifier}`;
+  const reminderIdNote = `[Reminder] ${reminder.identifier}`;
 
   const targetEvent = events.find(
-    (e) => e.notes != null && e.notes.includes(targetNotePrefix)
+    (e) => e.notes != null && e.notes.includes(reminderIdNote)
   );
 
   if (!m_dict[reminder.calendar.title]) {
@@ -57,12 +59,6 @@ for (const reminder of reminders) {
   } else {
     console.log(`创建日历事项 ${reminder.title} 到 ${reminder.calendar.title}`);
     const newEvent = new CalendarEvent();
-    newEvent.notes =
-      targetNotePrefix +
-      " " +
-      reminder.dueDate.getTime() +
-      "\n" +
-      (reminder.notes || "无备注"); //要加入备注
     updateEvent(newEvent, reminder);
   }
 }
@@ -70,13 +66,20 @@ for (const reminder of reminders) {
 Script.complete();
 
 function updateEvent(event, reminder) {
-  const r = event.notes?.match?.(noteReg);
+  const oldReminderDueDate = event.notes?.match?.(reminderDueDateReg)?.[2];
 
   // 从日历更新开始时间到提醒事项
-  if (r && r[3] && r[3] !== event.startDate.getTime()) {
+  if (oldReminderDueDate && oldReminderDueDate !== event.startDate.getTime()) {
     reminder.dueDate = event.startDate;
     reminder.save();
   }
+
+  const reminderIdNote = `[Reminder] ${reminder.identifier}`;
+  const reminderDueDateNote = `[DueDate] ${reminder.dueDate.getTime()}`;
+  event.notes = `
+${reminderIdNote}
+${reminderDueDateNote}
+${reminder.notes || "无备注"}`;
 
   event.title = `${reminder.title}`;
   cal_name = reminder.calendar.title;
@@ -160,5 +163,10 @@ function updateEvent(event, reminder) {
   }
 
   console.log(`【${reminder.title}】 Save`);
-  event.save();
+  try {
+    event.save();
+  } catch (e) {
+    console.error(e);
+    console.error(event);
+  }
 }
